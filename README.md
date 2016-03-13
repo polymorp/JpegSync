@@ -1,6 +1,9 @@
 # JpegSync
 This utility was created with the purpose of enabling the use of Windows Spotlight (lockscreen) images as desktop backgrounds. This function does not exist in Windows 10. However, the files are on your local disk, so it's just a matter of copying these to your wallpaper folder. This utility automates that process.
 
+## Getting started
+If you don't care about the source code, but just want the tool, browse to the <code>bin\release</code> folder and download <code>JpegSync.exe</code>. That's all you'll need!
+
 ## Command line options
 <pre>
 JpegSync
