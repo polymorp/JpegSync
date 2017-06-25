@@ -1,24 +1,43 @@
-﻿using JpegSync;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
+using System.Runtime.InteropServices;
+
 
 namespace JpegSync
 {
-	static class Program
+    internal static class Program
 	{
-		static void Main(string[] args)
+
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        static extern bool IsWindowVisible(IntPtr hWnd);
+
+        const int SW_HIDE = 0;
+        const int SW_SHOW = 5;
+        const int SW_MINIMISED= 2;
+
+
+        private static void Main(string[] args)
 		{
 			var argPointer = 0;
-			String pathInfo;
 
-			while (argPointer < args.Length)
+		    var handle = GetConsoleWindow();
+           // ShowWindow(handle, SW_SHOW);
+
+           if (args.Contains("-hide"))
 			{
+                ShowWindow(handle, SW_MINIMISED);
+            }
+
+            while (argPointer < args.Length)
 				if (args[argPointer].Equals("-i"))
 				{
 					argPointer++;
@@ -28,7 +47,7 @@ namespace JpegSync
 						var expanded = Environment.ExpandEnvironmentVariables(args[argPointer]);
 						argPointer++;
                         //pathInfo = Path.GetDirectoryName(expanded);
-                        pathInfo = expanded;
+                        var pathInfo = expanded;
 						PrintPathInfo(pathInfo);
 #if DEBUG
                         Console.ReadKey();
@@ -38,7 +57,7 @@ namespace JpegSync
 					catch (Exception e)
 					{
 						Console.WriteLine(args[argPointer] + " is not a valid path");
-						Console.WriteLine();
+                        Console.WriteLine(e.Message);
 						PrintHelpMessage();
 						return;
 					}
@@ -48,18 +67,19 @@ namespace JpegSync
                     argPointer++;
                     try
                     {
-                        var pathFrom = Environment.ExpandEnvironmentVariables(args[argPointer]);
+                        var pathFrom = Environment.ExpandEnvironmentVariables(args[argPointer]).Trim();
                         if (!Directory.Exists(pathFrom))
                             throw new DirectoryNotFoundException();
                         argPointer++;
 
-                        var pathTo = Environment.ExpandEnvironmentVariables(args[argPointer]);
+                        var pathTo = Environment.ExpandEnvironmentVariables(args[argPointer]).Trim();
                         if (!Directory.Exists(pathTo))
                             throw new DirectoryNotFoundException();
                         argPointer++;
 
                         SyncPaths(pathFrom, pathTo);
 #if DEBUG
+                    
                         Console.ReadKey();
 #endif
                         return;
@@ -77,18 +97,17 @@ namespace JpegSync
 					PrintHelpMessage();
 					return;
 				}
-			}
 
 			PrintHelpMessage();
 		}
 
-		static void PrintHelpMessage()
+        private static void PrintHelpMessage()
 		{
 			Console.WriteLine("Syntax:");
 			Console.WriteLine("JpegSync");
 			Console.WriteLine(" -i path                 Shows info on all JPEG files at the specified location");
 			Console.WriteLine(" -s path_from path_to    Syncs JPEGs from first path to the second");
-			Console.WriteLine("");
+            Console.WriteLine(" -hide                   Hide console window");
 			Console.WriteLine("");
 			Console.WriteLine("");
 #if DEBUG
@@ -96,35 +115,56 @@ namespace JpegSync
 #endif
         }
 
-        static void PrintPathInfo(String pathInfo)
+        private static void PrintPathInfo(string pathInfo)
 		{
 			Console.WriteLine("Reading from " + pathInfo);
 
             var files = JpegInfo.GetFiles(pathInfo);
 
 			foreach (var file in files)
-			{
                 Console.WriteLine(file.ToString);
             }
-		}
 
-        static void SyncPaths(string pathFrom, string pathTo)
+        private static void SyncPaths(string pathFrom, string pathTo)
         {
             Console.WriteLine("Syncing");
-            Console.WriteLine(String.Format("  {0}", pathFrom.Abbreviate(70, 4)));
+            Console.WriteLine($"  {pathFrom.Abbreviate(70, 4)}");
             Console.WriteLine("  to");
-            Console.WriteLine(String.Format("  {0}", pathTo.Abbreviate(70, 4)));
+            Console.WriteLine($"  {pathTo.Abbreviate(70, 4)}");
             Console.WriteLine();
 
-            var filesFrom = JpegInfo.GetFiles(pathFrom).Where(x => x.jpeg && x.width == 1920 && x.height == 1080);
-            var filesTo = JpegInfo.GetFiles(pathTo).Where(x => x.jpeg);
+            
+            var filesFrom = JpegInfo.GetFiles(pathFrom).Where(x => x.Jpeg && x.Width == 1920 && x.Height == 1080);
+            var filesTo = JpegInfo.GetFiles(pathTo).Where(x => x.Jpeg);
 
-            var filesNew = filesFrom.Where(x => filesTo.All(y => !x.Similar(y)));
+            //#if DEBUG
+            //            Stopwatch sw = Stopwatch.StartNew();
+            //#endif
+            //            var filesNew = filesFrom.Where(x => filesTo.All(y => !x.Similar(y)));
+            //#if DEBUG
+            //            sw.Stop();
+            //            Console.WriteLine("Time taken: {0}ms", sw.Elapsed.TotalMilliseconds);
+            //Stopwatch sw2 = Stopwatch.StartNew();
+        
+            //var filesNew2 = filesFrom.Where(x => filesTo.All(y => y.Hash != x.Hash));
+            //sw2.Stop();
+            //#if DEBUG
+            //            
+           // Stopwatch sw3 = Stopwatch.StartNew();
+            var filesNew3 = filesFrom.Where(x => filesTo.All(y => y != x));
+           // sw3.Stop();
 
-            if (filesNew.Count() > 0)
+            //Console.WriteLine("Time taken: {0}ms", sw.Elapsed.TotalMilliseconds);
+            //Console.WriteLine("Time taken: {0}ms", sw2.Elapsed.TotalMilliseconds);
+           // Console.WriteLine("Time taken: {0}ms", sw3.Elapsed.TotalMilliseconds);
+           // Console.WriteLine("filenew: " + filesNew.Count());
+           // Console.WriteLine("filenew2: " + filesNew2.Count());
+            Console.WriteLine("filenew3: " + filesNew3.Count());
+// #endif
+            if (filesNew3.Any())
             {
                 Console.WriteLine("Copying:");
-                foreach (var file in filesNew)
+                foreach (var file in filesNew3)
                 {
                     Console.WriteLine(file.ToString);
                     var filePathFrom = Path.Combine(pathFrom, file.FileName);
@@ -141,13 +181,13 @@ namespace JpegSync
 
         public static string Abbreviate(this string str, int length, int dots)
         {
-            int left = (length - dots) / 2;
-            int right = (length - dots) - left;
+            var left = (length - dots) / 2;
+            var right = length - dots - left;
 
             return
-                str.Length > length ?
-                str.Substring(0, left) + (new string('.', dots)) + str.Substring(str.Length - right) :
-                str;
+                str.Length > length
+                    ? str.Substring(0, left) + new string('.', dots) + str.Substring(str.Length - right)
+                    : str;
         }
     }
 }

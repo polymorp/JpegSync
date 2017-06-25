@@ -1,5 +1,0 @@
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Release\JpegSync.exe.config
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Release\JpegSync.exe
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Release\JpegSync.pdb
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\obj\Release\JpegSync.exe
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\obj\Release\JpegSync.pdb

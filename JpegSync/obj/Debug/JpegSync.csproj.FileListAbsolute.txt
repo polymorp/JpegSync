@@ -1,6 +1,6 @@
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.exe.config
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.exe
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.pdb
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.csprojResolveAssemblyReference.cache
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.exe
-d:\user\documents\visual studio 2015\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.pdb
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.exe.config
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.exe
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\bin\Debug\JpegSync.pdb
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.csprojResolveAssemblyReference.cache
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.exe
+C:\Users\k7\Documents\Visual Studio 2017\Projects\JpegSync\JpegSync\obj\Debug\JpegSync.pdb

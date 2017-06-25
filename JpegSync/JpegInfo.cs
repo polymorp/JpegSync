@@ -1,32 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 using System.Windows.Media.Imaging;
+// ReSharper disable NonReadonlyMemberInGetHashCode
 
 namespace JpegSync
 {
-    public class JpegInfo
+    public class JpegInfo : IEquatable<JpegInfo>
     {
-        private string filePath;
+        private string _filePath;
 
         public string FilePath
         {
             get
             {
-                return filePath;
+                return _filePath;
             }
             set
             {
-                filePath = value;
+                _filePath = value;
                 try
                 {
-                    size = (new FileInfo(filePath)).Length;
+                    Size = (new FileInfo(_filePath)).Length;
                 }
                 catch (Exception)
                 {
+                    // cannot get size but otherwise ignore
                 }
             }
         }
@@ -35,15 +35,17 @@ namespace JpegSync
         {
             get
             {
-                return Path.GetFileName(filePath);
+                return Path.GetFileName(_filePath);
             }
         }
 
-        public long size { get; set; }
-        public bool jpeg { get; set; } = true;
-        public bool error { get; set; } = false;
-        public int width { get; set; }
-        public int height { get; set; }
+        public long Size { get; set; }
+        public bool Jpeg { get; set; } = true;
+        public bool Error { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+
+        public string Hash { get; set; }
 
         public new string ToString
         {
@@ -52,20 +54,20 @@ namespace JpegSync
                 var filename = Path.GetFileName(FilePath);
 
                 var fileFormatted =
-                    filename.Length > 50 ?
+                    filename != null && filename.Length > 50 ?
                     filename.Substring(0, 23) + "...." + filename.Substring(filename.Length - 23) :
-                    filename.PadLeft(50);
+                    filename?.PadLeft(50);
 
                 string info;
 
-                if (!jpeg)
+                if (!Jpeg)
                     info = "(not a JPEG)";
-                else if (error)
+                else if (Error)
                     info = "Error reading file!";
                 else
-                    info = String.Format("{0,10} {1,10} bytes", width + "x" + height, size);
+                    info = $"{Width + "x" + Height,10} {Size,10} bytes";
 
-                return String.Format("{0}: {1,27}", fileFormatted, info);
+                return $"{fileFormatted}: {info,27}";
             }
         }
 
@@ -75,30 +77,32 @@ namespace JpegSync
 
             foreach (var file in Directory.EnumerateFiles(path))
             {
-                JpegBitmapDecoder jpeg;
-
                 try
                 {
                     var filePath = Path.Combine(path, file);
-
-                    jpeg = new JpegBitmapDecoder(
-                        new FileStream(filePath, FileMode.Open),
-                        System.Windows.Media.Imaging.BitmapCreateOptions.None,
-                        System.Windows.Media.Imaging.BitmapCacheOption.None
+                    using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                    {
+                    var jpeg = new JpegBitmapDecoder(
+                        stream, 
+                        BitmapCreateOptions.None,
+                        BitmapCacheOption.None
                     );
 
                     var frame = jpeg.Frames[0];
-                    files.Add(new JpegInfo() { FilePath = file, width = frame.PixelWidth, height = frame.PixelHeight });
+                        files.Add(new JpegInfo() { FilePath = file, Width = frame.PixelWidth, Height = frame.PixelHeight, Hash = GetChecksum(filePath) });
+                    }
+                       
                 }
                 catch (FileFormatException)
                 {
-                    files.Add(new JpegInfo() { FilePath = file, jpeg = false });
-                    continue;
+                    files.Add(new JpegInfo() { FilePath = file, Jpeg = false });
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    files.Add(new JpegInfo() { FilePath = file, error = true });
-                    continue;
+#if DEBUG
+                    Console.WriteLine("error: {0}",ex.Message);
+#endif
+                    files.Add(new JpegInfo() { FilePath = file, Error = true });
                 }
             }
 
@@ -108,15 +112,65 @@ namespace JpegSync
         public static bool Similar(JpegInfo a, JpegInfo b)
         {
             return (
-                a.jpeg == b.jpeg &&
-                a.size == b.size &&
-                a.width == b.width &&
-                a.height == b.height);
+                a.Jpeg == b.Jpeg &&
+                a.Size == b.Size &&
+                a.Width == b.Width &&
+                a.Height == b.Height &&
+                a.Hash == b.Hash
+                );
         }
 
         public bool Similar(JpegInfo compare)
         {
-            return JpegInfo.Similar(this, compare);
+            return Similar(this, compare);
+        }
+
+        private static string GetChecksum(string file)
+        {
+            using (FileStream stream = File.OpenRead(file))
+            {
+                var sha = new SHA256Managed();
+                byte[] checksum = sha.ComputeHash(stream);
+                return BitConverter.ToString(checksum).Replace("-", String.Empty);
+            }
+        }
+
+
+        public bool Equals(JpegInfo other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Size == other.Size && Width == other.Width && Height == other.Height && string.Equals(Hash, other.Hash);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((JpegInfo) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Size.GetHashCode();
+                hashCode = (hashCode * 397) ^ Width;
+                hashCode = (hashCode * 397) ^ Height;
+                hashCode = (hashCode * 397) ^ (Hash != null ? Hash.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(JpegInfo left, JpegInfo right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(JpegInfo left, JpegInfo right)
+        {
+            return !Equals(left, right);
         }
     }
 }
